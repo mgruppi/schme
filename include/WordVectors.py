@@ -1,6 +1,5 @@
 import numpy as np
 from collections import OrderedDict
-from sklearn import preprocessing
 
 
 # This file contains the WordVectors class used to load and handle word embeddings
@@ -76,8 +75,11 @@ class WordVectors:
     def center(self):
         self.vectors = self.vectors - self.vectors.mean(axis=1, keepdims=True)
 
+
     def normalize(self):
-        self.vectors = preprocessing.normalize(self.vectors, norm="l2")
+        self.vectors = self.vectors/np.linalg.norm(self.vectors, axis=1)
+        for i, v in enumerate(self.vectors):
+            self.vectors[i] = v/np.linalg.norm(v)
 
     def get_words(self):
         return self.word_id.keys()
