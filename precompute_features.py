@@ -16,15 +16,30 @@ from include.word2vec_utils import align_wordvectors
 # Reproduce experiments from SemEval-2020 Task 1
 def main():
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--landmarks", type=int, default=None,
+                        help="Number of landmarks to use in alignment")
+    parser.add_argument("--random", action="store_true",
+                        help="Choose landmarks at random")
+    parser.add_argument("--least_freq", action="store_true",
+                        help="Choose least frequent words as landmarks")
+    parser.add_argument("--languages", type=str, nargs="+",
+                        default=["english", "german", "latin", "swedish"])
+    parser.add_argument("--features", type=str, nargs="+",
+                        default=["cosine", "freq_diff", "map"],
+                        help="Features to compute")
+    args = parser.parse_args()
+
+    languages = args.languages  # languages to compute
+    features_to_comp = set(args.features)  # features to compute
+    n = args.landmarks  # number of landmarks to align on
+
     path = "test_data_public"
 
     if not os.path.exists(path):
         print("Could not find path", path)
         print("Please run download-semeval-data.sh to download the data")
         return 0
-
-    languages = ["english", "german", "latin", "swedish"]
-
 
     for lang in languages:
 
@@ -59,8 +74,14 @@ def main():
             wv2 = WordVectors(input_file="wordvectors/%s/2.vec" % lang)
 
         # Compute intersecting words and align wordvectors
+        # Align wordvectors using n landmarks
+        # Default is to use top n words as landmarks (most frequent)
+        # If random_landmarks=True is passed, choose at random
+        # If least_freq=True is passed, choose bottom words (least frequent)
         wv1, wv2 = intersection(wv1, wv2)
-        wv1, wv2 = align_wordvectors(wv1, wv2)
+        wv1, wv2 = align_wordvectors(wv1, wv2, landmarks=n,
+                                     random_landmarks=args.random,
+                                     least_freq=args.least_freq)
 
         words = wv1.words  # both wv1 and wv2 now have the same words
 
@@ -80,36 +101,29 @@ def main():
 
         # Check for cosine
         f_path = "features/%s/cosine.csv" % lang
-        if not os.path.exists(f_path):
+        if "cosine" in features_to_comp:
             print("Computing cosine")
             features["cosine"] = extract_features.get_metric(wv1, wv2,
                                                              words, "cosine")
             extract_features.save_feature_file(f_path,
                                                 features["cosine"],
                                                 words)
-        # load cosine.csv file
-        print("Loading feature file", f_path)
-        features["cosine"] = extract_features.read_feature_file(f_path)
+
 
         # Check frequency differential
         f_path = "features/%s/freq_diff.csv" % lang
-        if not os.path.exists(f_path):
+        if "freq_diff" in features_to_comp:
             print("Computing freq diff")
             dico = extract_features.frequency_differential_scores(corpus1, corpus2, words)
             extract_features.save_feature_file(f_path,dico, words)
-        # load freq_diff.csv
-        print("Loading feature file", f_path)
-        features["freq_diff"] = extract_features.read_feature_file(f_path)
 
         # Check for MAP feature
         f_path = "features/%s/map.csv" % lang
-        if not os.path.exists(f_path):
+        if "map" in features_to_comp:
             print("Computing map")
             dico = extract_features.map_distance(wv1, wv2, words)
             extract_features.save_feature_file(f_path, dico, words)
 # load map.csv
-        print("Loading feature file", f_path)
-        features["map"] = extract_features.read_feature_file(f_path)
 
         log_time(t0)
 
