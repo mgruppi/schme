@@ -124,15 +124,15 @@ def main():
         "english": ["cosine"],
         "german": ["cosine", "freq_diff"],
         "latin": ["cosine", "freq_diff"],
-        "swedish": ["map"]
+        "swedish": ["cosine"]
     }
 
     # Set up thresholds for each language
     lang_t = \
     {
-        "english": 0.75,
-        "german": 0.75,
-        "latin": 0.5,
+        "english": 0.8,
+        "german": 0.7,
+        "latin": 0.2,
         "swedish": 0.75
     }
 
